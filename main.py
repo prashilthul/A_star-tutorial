@@ -1,5 +1,6 @@
 import pygame
 import math
+import random
 from queue import PriorityQueue
 
 WIDTH = 800
@@ -176,7 +177,7 @@ def draw(win , grid, rows, width):
     pygame.display.update()
     
     
-    
+
     
 def get_clicked_pos(pos, rows, width):
     gap = width // rows
@@ -186,6 +187,57 @@ def get_clicked_pos(pos, rows, width):
     col = x // gap
     return row , col
 
+
+### ADDED PORTION ###
+### Making Custom Maze by passing list 
+def draw_maze(grid, POS_OF_WALLS):
+    for row,col in POS_OF_WALLS:
+        spot = grid[row][col]
+        spot.make_barrier()
+        
+    return 0;
+
+
+### used AI for maze generation implementation
+def generate_maze(width, height):
+    maze = [[1 for _ in range(width)] for _ in range(height)]
+    
+    start_x, start_y = 1, 1
+    maze[start_y][start_x] = 0  
+    
+    walls = [(start_x + dx, start_y + dy) for dx, dy in [(2, 0), (0, 2)] if 0 <= start_x + dx < width and 0 <= start_y + dy < height]
+    random.shuffle(walls)
+    
+    while walls:
+        x, y = walls.pop()
+        if maze[y][x] == 1:
+            neighbors = []
+            for dx, dy in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < width and 0 <= ny < height and maze[ny][nx] == 0:
+                    neighbors.append((nx, ny))
+            
+            if neighbors:
+                nx, ny = random.choice(neighbors)
+                maze[(y + ny) // 2][(x + nx) // 2] = 0
+                maze[y][x] = 0
+                for dx, dy in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
+                    wx, wy = x + dx, y + dy
+                    if 0 <= wx < width and 0 <= wy < height and maze[wy][wx] == 1:
+                        walls.append((wx, wy))
+                random.shuffle(walls)
+    
+    wall_list = []
+    for row in range(height):
+        for col in range(width):
+            if maze[row][col] == 1:
+                wall_list.append([col + 1, row + 1])  
+
+    return wall_list
+
+
+
+
 def main(win, width):
     ROWS = 50 
     grid = make_grid(ROWS, width)
@@ -194,7 +246,7 @@ def main(win, width):
     end = None
     
     run = True
-    
+    # WALLS = [[1,2],[3,4]] for custom mazes add points representing walls as shown
     while run:
         draw(win, grid, ROWS, width)
         for event in pygame.event.get():
@@ -202,6 +254,14 @@ def main(win, width):
                 run == False    
                 pygame.quit()
                 return
+
+            ####ADDED PORTION####
+            spot = grid[3][3]##will make changes later
+            start = spot
+            start.make_start()
+            spot = grid[ROWS-2][ROWS-2]##will make changes later
+            end = spot
+            end.make_end()
 
             if pygame.mouse.get_pressed()[0]:
                 pos = pygame.mouse.get_pos()
@@ -238,6 +298,14 @@ def main(win, width):
                     start = None
                     end = None
                     grid = make_grid(ROWS,width)     
+                if event.key == pygame.K_d:
+                    WALLS = generate_maze(49, 49)
+                    draw_maze(grid, WALLS)
+                if event.key == pygame.K_q:
+                    run == False    
+                    pygame.quit()
+                    return
+ 
     pygame.display.quit()                                            
     pygame.quit()
     
